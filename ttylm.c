@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <getopt.h>
@@ -93,7 +94,7 @@ void run_terminal() {
 	execvp("/bin/login", (const char*[]){"login", 0});
 	fprintf(stderr, "Fatal erroring executing /bin/login...\n");
 	sleep(3);
-	exit(-1);
+	return;
 }
 void run_graphical(const char* uname, int noauth) {
 	int ttylm_uid, user_uid;
@@ -107,13 +108,15 @@ void run_graphical(const char* uname, int noauth) {
 			}	
 		}
 		fprintf(stderr, "Unable to load into user ttylm..."); 
-		exit(-1);
+		sleep(3);
+		return;
 	}
 ttylm_uid_ok:
 	// Get user if not provided
 	if (uname == 0) {
 		// More than large enough for any username. 
 		clear();
+		printf("    Grahipcal Environment Login\n\n");
 		printf("Username: ");
 		fflush(stdout);
 		int srd = read(STDIN_FILENO, user, 512);
@@ -128,7 +131,7 @@ ttylm_uid_ok:
 	if ((user_uid = get_user_uid(user)) < 0) {
 		fprintf(stderr, "Unable to identify user %s\n", user, errno);
 		sleep(3);
-		exit(-1);
+		return;
 	}
 	// The user exists
 	// Get out tty device
@@ -136,9 +139,9 @@ ttylm_uid_ok:
 	if (tty == NULL) {
 		// not a tty. Hmmm
 		fprintf(stderr, "Not a tty!\n");
-		exit(-1);
+		sleep(3);
+		return;
 	}
-	printf("Our tty is: %s\n", tty);
 	// Give our tty '777' permissions so we (hopefully) don't have a problem
 	chmod(tty, /* octal */ 0777);
 
@@ -172,6 +175,7 @@ ttylm_uid_ok:
 		char cmd[512];
 		sprintf(cmd, "echo \"exec startx -- %s\" | su %s -l", startx_tty_str, user);
 		system(cmd);
+		return;
 	} else {
 		sleep(1);
 		// Just return here. We could exit(), but I'm not that paranoid (yet)
@@ -189,7 +193,7 @@ void run_reboot() {
 }
 void run_self_reinit() {
 	// Exit. init will (hopefully) restart us.
-	exit(0);
+	execvp("/bin/ttylm", (char*[]) {"/bin/ttylm", 0});
 }
 // Default user on initial bootup.
 // If defined, and the file '/tmp/init_ttylm_primary' does not exist
@@ -201,7 +205,7 @@ const struct option long_opts[] = {
 };
 
 
-int main(int argc, const char** argv) {
+int main(int argc, char** argv) {
 	if (getuid() != 0) {
 		fprintf(stderr, "Must run as root\n");
 		sleep(3);
