@@ -102,7 +102,7 @@ void run_graphical(const char* uname, int noauth) {
 	if ((ttylm_uid = get_user_uid("ttylm")) < 0) {
 		// Attempt to create the ttylm account
 		int ret;
-		if ((ret = system("/sbin/useradd --system -M ttylm")) == 0) {
+		if ((ret = system("/usr/sbin/useradd --system -M ttylm -s /sbin/nologin -G wheel")) == 0) {
 			if ((ttylm_uid = get_user_uid("ttylm")) > 0) {
 				goto ttylm_uid_ok;
 			}	
